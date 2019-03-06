@@ -4,7 +4,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.TextView;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -15,6 +17,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class MainActivity extends AppCompatActivity {
 
     private TextView textView;
+    private JsonPlaceHolderApi jsonPlaceHolderApi;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,9 +31,21 @@ public class MainActivity extends AppCompatActivity {
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
-        JsonPlaceHolderApi jsonPlaceHolderApi = retrofit.create(JsonPlaceHolderApi.class);
+        jsonPlaceHolderApi = retrofit.create(JsonPlaceHolderApi.class);
 
-        Call<List<Post>> call = jsonPlaceHolderApi.GetPosts();
+//        getPosts();
+        getComments();
+    }
+
+    private void getPosts(){
+
+        Map<String,String> par=new HashMap<>();
+
+        par.put("userId","1");
+        par.put("_sort", "id");
+        par.put("_order","asc");
+
+        Call<List<Post>> call = jsonPlaceHolderApi.GetPosts(par);
 
         call.enqueue(new Callback<List<Post>>() {
             @Override
@@ -55,6 +70,38 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<List<Post>> call, Throwable t) {
+                textView.setText(t.getMessage());
+            }
+        });
+    }
+
+    private void getComments(){
+        Call<List<Comment>> call = jsonPlaceHolderApi.getComments("posts/3/comments" );
+
+        call.enqueue(new Callback<List<Comment>>() {
+            @Override
+            public void onResponse(Call<List<Comment>> call, Response<List<Comment>> response) {
+                if(!response.isSuccessful()){
+                    textView.setText("code:" +response);
+                    return;
+                }
+
+                List<Comment> Comments = response.body();
+
+                for(Comment Comment : Comments){
+                    String content="";
+                    content+="PostId:"+Comment.getPostId()+ "\n";
+                    content+="Id:"+Comment.getId()+"\n";
+                    content+="Name:"+ Comment.getName()+"\n";
+                    content+="Email:"+ Comment.getEmail()+"\n";
+                    content+="Text:"+Comment.getText()+"\n\n";
+
+                    textView.append(content);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Comment>> call, Throwable t) {
                 textView.setText(t.getMessage());
             }
         });
